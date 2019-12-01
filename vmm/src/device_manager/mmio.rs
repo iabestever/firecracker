@@ -81,6 +81,7 @@ pub struct MMIODeviceManager {
     guest_mem: GuestMemory,
     mmio_base: u64,
     irq: u32,
+    first_irq: u32,
     last_irq: u32,
     id_to_dev_info: HashMap<(DeviceType, String), MMIODeviceInfo>,
     raw_io_handlers: HashMap<(DeviceType, String), Arc<Mutex<dyn RawIOHandler>>>,
@@ -100,6 +101,7 @@ impl MMIODeviceManager {
             guest_mem,
             mmio_base: *mmio_base,
             irq: irq_interval.0,
+            first_irq: irq_interval.0,
             last_irq: irq_interval.1,
             bus: devices::Bus::new(),
             id_to_dev_info: HashMap::new(),
@@ -117,7 +119,7 @@ impl MMIODeviceManager {
         device_id: &str,
     ) -> Result<u64> {
         if self.irq > self.last_irq {
-            return Err(Error::IrqsExhausted);
+            self.irq  = self.first_irq;
         }
         let mmio_device = devices::virtio::MmioDevice::new(self.guest_mem.clone(), device)
             .map_err(Error::CreateMmioDevice)?;
